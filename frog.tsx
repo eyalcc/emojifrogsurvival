@@ -1,5 +1,15 @@
 'use client'
-import { useState,useEffect } from "react";
+/*
+* File Name   : frog.tsx
+* Author      : Eyal Stern
+* Description : Emoji Frog Survival React component
+* Created     : 2024-08-21
+*/
+
+//import '@/app/ui/global.css';
+
+import { useState, useEffect, useRef } from "react";
+//import { KeyboardEvent } from "react";
 
 //menu
 import * as React from 'react';
@@ -7,17 +17,21 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+
+//modal
+import Box from '@mui/material/Box';
+//import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Modal from '@mui/material/Modal';
+
+
+//menu 2
 const options = [
   'Start Over',
   'About',
 ];
 const ITEM_HEIGHT = 48;
 
-//modal
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Modal from '@mui/material/Modal';
 
 export default function Frog() {
 
@@ -26,7 +40,7 @@ export default function Frog() {
 	const handleOpenModal = () => setOpenModal(true);
 	const handleCloseModal = () => {
 		setOpenModal(false);
-		setPause(0);
+		setPause(false);
 	}
 	
 	//menu	
@@ -38,14 +52,14 @@ export default function Frog() {
 	const handleClose = () => {
 	  setAnchorEl(null);
 	};
-	const handleItem = (item) => {
+	const handleItem = (item:string) => {
 	  switch(item){
 		case "Start Over" :
 			resetGame();
 			break;
 		case "About":
 			handleOpenModal();
-			setPause(1);
+			setPause(false);
 			break;
 	  }
 	};
@@ -63,32 +77,37 @@ export default function Frog() {
 	const fieldLength = xTiles*tileSize;
 	const fieldHeight = yTiles*tileSize;
 	
-	var deathTimer;
-	var deathTimerGraphic2;
+	var deathTimer = useRef<ReturnType<typeof setInterval>>();
+	var deathTimerGraphic2 = useRef<ReturnType<typeof setInterval>>();
 	
 	const [frogYTile, setFrogYTile] = useState(0);
 	const [frogX, setFrogX] = useState(1);
 	const [frogY, setFrogY] = useState(1);
-	const [frogHit, setFrogHit] = useState();
-	const [frogDrown, setFrogDrown] = useState();
+	const [frogHit, setFrogHit] = useState(false);
+	const [frogDrown, setFrogDrown] = useState(false);
 	const [frogLog, setFrogLog] = useState(-1);
 	const [tick, setTick] = useState(0);
-	const [died, setDied] = useState(0);
-	const [diedAt, setDiedAt] = useState([]);
-	const [won, setWon] = useState();
+	const [died, setDied] = useState(false);
+	const [diedAt, setDiedAt] = useState<number[]>([]);
+	const [won, setWon] = useState(false);
 	const [pause, setPause] = useState(false);
 	const [addSneakySnake, setAddSneakySnake] = useState(-1);
-	const [freezeFrog, setFreezeFrog] = useState();
+	const [freezeFrog, setFreezeFrog] = useState(false);
 	
 	//aliases
 	const ts = tileSize;
 	const fl = fieldLength;
 	const sneakySnakeIndex = 0;
-	const carData = [		
+	
+	const carData: Array<any> = [
 		//sneaky snake - first in list
 		{row:99, x:0, speed:0, icon:'🐍', sneakySnake:1},
 		
 		{row:5, x:0, speed:-8, icon:'🐍'},
+
+		{row:4, x:fl, 	speed:9, 	icon:'🏎️'}, 
+		{row:4, x:fl/2, speed:9, 	icon:'🏎️'},
+		{row:4, x:fl/3, speed:9, 	icon:'🏎️'},
 		
 		{row:3, x:fl, 	speed:-2, 	icon:'🚚'},
 		{row:3, x:fl/2, speed:-2, 	icon:'🚚'},
@@ -102,11 +121,8 @@ export default function Frog() {
 		{row:1, x:fl/2, speed:-7, 	icon:'🚗'},
 		{row:1, x:fl/8, speed:-7, 	icon:'🚗'},
 		
-		{row:4, x:fl, 	speed:9, 	icon:'🏎️'}, 
-		{row:4, x:fl/2, speed:9, 	icon:'🏎️'},
-		{row:4, x:fl/3, speed:9, 	icon:'🏎️'},
 	]
-	const logData = [
+	const logData: Array<any> = [
 		{row:9, x:ts*0, speed:5, 	icon:'🐢'},
 		{row:9, x:ts*1, speed:5, 	icon:'🐢'},
 		{row:9, x:ts*2, speed:5, 	icon:'🐢'},
@@ -132,8 +148,7 @@ export default function Frog() {
 		{row:6, x:ts*1, speed:-4, 	icon:'🐢'},
 		{row:6, x:ts*2, speed:-4, 	icon:'🐢'},
 		{row:6, x:ts*3, speed:-4, 	icon:'🐢'},
-		
-		
+				
 		{row:6, x:ts*6, speed:-4, 	icon:'🐢'},
 		{row:6, x:ts*7, speed:-4, 	icon:'🐢'},
 		{row:6, x:ts*8, speed:-4, 	icon:'🐢'},
@@ -144,30 +159,30 @@ export default function Frog() {
 	const [logs, setLogs] = useState(logData);
 	const [pads, setPads] = useState([0,0,0,0,0]);
 	
-	const bound = (val, min, max) => {
+	const bound = (val: number, min: number, max: number) => {
 		return Math.max( min, Math.min(val, max));
 	}
 	
-	//init comonent
+	//init component
 	useEffect(() => {
 		initObjectPositions(logs, setLogs);
 		initObjectPositions(cars, setCars);
 		setAddSneakySnake(getRandomLog());
 		handleOpenModal();
-		setPause(1);
+		setPause(true);
 	}, []);
 	
 	//interval timer
 	useEffect(() => {
-		const timer = setTimeout(()=>{
+		setTimeout(()=>{
 			setTick((tick+1)%120);
 		}, tickLength);
 	},[tick])
 	
-	const initObjectPositions = (objects, setObj) => {
+	const initObjectPositions = (objects:Array<any>, setObj:Function) => {
 		var objects2 = [...objects];
 		objects2.forEach((object,i)=>{
-			object.y = tileSize * object.row;
+			object.y = tileSize * object.row as number;
 			objects2[i] = object;
 		})
 		setObj(objects2);
@@ -176,26 +191,27 @@ export default function Frog() {
 	const resetGame = () => {
 		resetFrog();
 		setPads([0,0,0,0,0]);
-		setWon(0);
-		setPause(0);
+		setWon(false);
+		setPause(false);
 	}
 	
-	const clickW = () => { goDir('up') }
-	const clickA = () => { goDir('left') }
-	const clickS = () => { goDir('down') }
-	const clickD = () => { goDir('right') }
+	const clickW = () => { goDir('up'	); }
+	const clickA = () => { goDir('left'	); }
+	const clickS = () => { goDir('down'	); }
+	const clickD = () => { goDir('right'); }
 	  
-	const fieldKeyPress = (e) => {
+	const fieldKeyPress = (e:React.KeyboardEvent<HTMLInputElement>) => {
 		const dirs = {
 			"KeyW":'up',
 			"KeyA":'left',
 			"KeyS":'down',
 			"KeyD":'right',
 		}
-		goDir(dirs[e.code]);
+		goDir(dirs[e.code as keyof typeof dirs] );
+		e.preventDefault();
 	}
 	
-	const goDir = (dir) => {
+	const goDir = (dir:string) => {
 		if(freezeFrog){
 			return;
 		}
@@ -217,7 +233,7 @@ export default function Frog() {
 	}
 	
 	const getRandomLog = () => {
-		const logIndeces = [];
+		const logIndeces:Array<number> = [];
 		logs.forEach((obj,i)=>{
 			if(obj.icon === '🪵') {
 				logIndeces.push(i);
@@ -226,7 +242,7 @@ export default function Frog() {
 		return logIndeces[Math.floor(Math.random() * logIndeces.length)];
 	}
 	
-	const moveObjects = (objects, setObjects) => {
+	const moveObjects = (objects:Array<any>, setObjects:Function) => {
 		const objects2 = [...objects];
 		let addSneakySnakeNow = addSneakySnake > -1;
 		objects2.forEach((obj,i)=>{
@@ -264,7 +280,7 @@ export default function Frog() {
 				if(addSneakySnakeNow && obj.icon === '🪵' && addSneakySnake === i) {
 					addSneakySnakeNow = false;
 					setAddSneakySnake(-1);
-					cars[0] = {...cars[0], y:obj.y, x:x, speed:obj.speed, row:obj.row, freeze:false};
+					cars[sneakySnakeIndex] = {...cars[sneakySnakeIndex], y:obj.y, x:x, speed:obj.speed, row:obj.row, freeze:false} ;
 					setCars(cars);
 				}
 			};
@@ -288,31 +304,30 @@ export default function Frog() {
 		setFrogYTile(0);
 	}
 	const die = () => {
-		setDied([frogX, frogY]);
+		setDied(true);
 		setDiedAt([frogX, frogY]);
 		resetFrog();
-		setFreezeFrog(1)
-		clearTimeout(deathTimer);
-		clearTimeout(deathTimerGraphic2);
+		setFreezeFrog(true)
+		clearTimeout(deathTimer.current);
+		clearTimeout(deathTimerGraphic2.current);
 		
-		deathTimer = setTimeout(()=>{
-			setDied(0);
-			
-		}, 4000)
-		deathTimerGraphic2 = setTimeout(()=>{
-			setFrogDrown(0);
+		deathTimer.current = setTimeout(()=>{
+			setDied(false);
+		}, 5000)
+		deathTimerGraphic2.current = setTimeout(()=>{
+			setFrogDrown(false);
 			setFrogHit(false);
-			setFreezeFrog(0);
+			setFreezeFrog(false);
 		}, 2000)
 	}
 	
-	const checkFrogHit = (obj) =>{
+	const checkFrogHit = (obj:{x:number, y:number, row:number}) =>{
 		if(obj.row === frogYTile && Math.abs(obj.x-frogX) < hitbox) {
 			setFrogHit(true);
 			die();
 		}
 	}
-	const checkHits = (objects) => {
+	const checkHits = (objects:Array<any>) => {
 		objects.forEach((obj,i)=>{
 			checkFrogHit(obj);
 		})
@@ -332,7 +347,7 @@ export default function Frog() {
 		}
 		if(frogYTile >= riverLaneStart && frogYTile <= riverLaneEnd){
 			if(!setLog) {
-				setFrogDrown(1);
+				setFrogDrown(true);
 				die();
 			}
 		}	
@@ -346,8 +361,8 @@ export default function Frog() {
 				pads2[(frogXTile-1)/padSpacing] = 1;
 				setPads(pads2)
 				if(pads2.filter((e)=>{return !e}).length < 1){
-					setWon(1);
-					setPause(1);
+					setWon(true);
+					setPause(true);
 				}
 				resetFrog();
 			} else {
@@ -372,7 +387,7 @@ export default function Frog() {
 			className="relative bg-gray-400 p-3"
 			style={{width:(fieldLength + 50) + 'px',}}
 			onKeyDown={fieldKeyPress}
-			tabIndex="0"
+			tabIndex={0}
 		>
 			<div className="justify-center">
 				<h1>🐸Emoji Frog Survival🐸
@@ -456,7 +471,6 @@ export default function Frog() {
 			
 			{/*main play area*/}
 			<div
-				tabIndex="0"
 				style={{
 					zIndex: 0,
 					left: '10px',
@@ -491,11 +505,11 @@ export default function Frog() {
 				{/*frog and death*/}
 				{!!freezeFrog && (tick%2===0) && <div className="absolute" style={{left: frogX, bottom: frogY, WebkitTransform:'scale(1.5, 1.5)'}}>⏹️</div>}
 				<div className="absolute" style={{left: frogX, bottom: frogY}} >🐸</div>
-				{!!died && (<>
-					<div className="absolute" style={{left: died[0], bottom: died[1]}}>☠️</div>
-					{!!frogHit && (<div className="absolute" style={{left: died[0], bottom: died[1]}}>💥</div>)}
-					{!!frogDrown && (<div className="absolute" style={{left: died[0], bottom: died[1]}}>💦</div>)}
-				</>)}
+				{!!died && (<div className="absolute" style={{left: diedAt[0], bottom: diedAt[1], width:tileSize, height: tileSize}}>
+					<div className="absolute">☠️</div>
+					{!!frogHit && (<div className="absolute">💥</div>)}
+					{!!frogDrown && (<div className="absolute">💦</div>)}
+				</div>)}
 				
 				{/*cars*/}
 				{cars.map((car,i) => (
@@ -518,7 +532,7 @@ export default function Frog() {
 				<div onClick={clickD} className="border-red-400 border-r-4 ">D</div>
 			</div>
 		</div>
-	)
+	);
 
 }
 
